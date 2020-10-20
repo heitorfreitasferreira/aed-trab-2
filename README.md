@@ -2,7 +2,7 @@
 
 # Responsáveis pela questão
 
-1 -
+1 - Jão
 <br>
 2 - Valtim
 <br>
@@ -12,9 +12,9 @@
 <br>
 5 - Valtim
 <br>
-6 -
+6 - Jão
 <br>
-7 -
+7 - Heitor
 <br>
 8 - Heitor
 <br>
