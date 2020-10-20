@@ -1,22 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "dinamicStack.h"
+#include "dinamicStackFLOAT.h"
 
 struct node {
-    int info;
+    float info;
     struct node* next;
 };
 
-DinStack dstack_start() {
+FloatStack start_stk() {
     return NULL;
 }
 
-int dempty_stack(DinStack stk) {
+int stack_empty(FloatStack stk) {
     return stk == NULL;
 }
 
-int dpush(DinStack *stk, int value) {
-    DinStack node = (DinStack) malloc(sizeof(struct node));
+int stack_push(FloatStack *stk, float value) {
+    FloatStack node = (FloatStack) malloc(sizeof(struct node));
     if(node == NULL)
         return 0;
     node->info = value;
@@ -25,26 +25,26 @@ int dpush(DinStack *stk, int value) {
     return 1;
 }
 
-int dpop(DinStack *stk, int *value) {
-    if(dempty_stack(*stk))
+int stack_pop(FloatStack *stk, float *value) {
+    if(stack_empty(*stk))
         return 0;
-    DinStack aux = *stk;
+    FloatStack aux = *stk;
     *value = aux->info;
     *stk = aux->next;
     free(aux);
     return 1;
 }
 
-int dget_top(DinStack *stk, int *value) {
-    if(dempty_stack(*stk))
+int stack_top(FloatStack *stk, float *value) {
+    if(stack_empty(*stk))
         return 0;
     *value = (*stk)->info;
     return 1;
 }
 
-int esvazia_pilha(DinStack *stk) {
+int free_stack(FloatStack *stk) {
     if(*stk == NULL) return 0;
-    DinStack aux;
+    FloatStack aux;
     while(*stk != NULL) {
         aux = (*stk)->next;
         free(*stk);

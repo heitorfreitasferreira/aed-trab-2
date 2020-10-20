@@ -1,22 +1,74 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "dinamicStack.h"
+#include <math.h>
+#include "dinamicStackCHAR.h"
+#include "dinamicStackFLOAT.h"
 
 //Verifica se o char é um operador
 int op(char opDel) {
     return opDel == '+' || opDel == '-' || opDel == '/' || opDel == '*' || opDel == '^';
 }
-
+//Verifica se o char é um operando
+int operando(char opDel) {
+    return (opDel >= 'a' && opDel <= 'z') || (opDel >= 'A' && opDel <= 'Z');
+}
 //Verifica se o char é um delimitador de abertura
-int del(char opDel) {
+int delAber(char opDel) {
     return opDel == '{' || opDel == '[' || opDel == '(';
+}
+
+//Verifica se o char é um delimitador de fechamento
+int delFecha(char opDel) {
+    return opDel == '}' || opDel == ']' || opDel == ')';
 }
 
 //Olha se a precedencia do delimitador do topo
 //é maior ou igual a que eu quero inserir
 int precedencia(char topo, char atual) {
     return topo >= atual;
+}
+
+//Ordem de precedencia dos operadores aritméticos
+//e delimitadores
+int compare(char op) {
+    if(op == '^')
+        return 6;
+    if(op == '*' || op == '/')
+        return 5;
+    if(op == '+' || op == '-')
+        return 4;
+    if(op == '{')
+        return 3;
+    if(op == '[')
+        return 2;
+    if(op == '(')
+        return 1;
+    return 0;    
+}
+
+//Olha se a precedencia dos operadores do topo
+//é maior ou igual a que eu quero inserir
+int precedencia_converte(char topo, char atual) {
+    int top = compare(topo), comp = compare(atual);
+    return top >= comp;
+}
+
+//Realiza a operação entre dois números
+//conforme o operador passado
+float opCorresp(float op1, float op2, char op) {
+    switch(op) {
+        case '+':   
+            return op1 + op2;
+        case '-':
+            return op1 - op2;
+        case '*':
+            return op1 * op2;
+        case '/':
+            return op1 / op2;
+        case '^':
+            return pow(op1, op2);
+    }
 }
 
 //Retornos: 
@@ -31,15 +83,15 @@ int valida_escopo(char *exp) {
     //Percorro a expressão
     for(i = 0; i < strlen(exp); i++) {
         //Se for um delimitador de abertura, eu coloco esse na pilha
-        if(del(exp[i])) {
+        if(delAber(exp[i])) {
             //Olho no topo da pilha pra ver se existe um delimitador
             //de abertura, inicializo com 124 para o caso em que a pilha
             //esta vazia e que a função precedencia permita colocar o delimitador
-            //atual na pilha, já que 124 >= '{' (124 >= 123)
-            int topo = 124;
+            //atual na pilha, já que '|' >= '{' (124 >= 123)
+            char topo = '|';
             dget_top(&delimitadores, &topo);  
             if(precedencia((char) topo, exp[i])) {
-                if(!dpush(&delimitadores, (int) exp[i])) {
+                if(!dpush(&delimitadores, exp[i])) {
                     printf("Erro no push!");
                     esvazia_pilha(&delimitadores);
                     return 0;
@@ -52,8 +104,8 @@ int valida_escopo(char *exp) {
         }
         //Se for um delimitador de fechamento, eu retiro o de abertura correspondente
         //da pilha
-        if(exp[i] == '}' || exp[i] == ']' || exp[i] == ')') {
-            int del;
+        if(delFecha(exp[i])) {
+            char del;
             //Olho o elemento do topo da pilha, se der errado, é porque
             //a expressão está inválida, pois, tem um delimitador de fechamento
             //na expressão e a pilha já está vazia
@@ -85,74 +137,52 @@ int valida_escopo(char *exp) {
     return flag;
 }
 
-//Ordem de precedencia dos operadores aritméticos
-//e delimitadores
-int compare(char op) {
-    if(op == '^')
-        return 6;
-    if(op == '*' || op == '/')
-        return 5;
-    if(op == '+' || op == '-')
-        return 4;
-    if(op == '{')
-        return 3;
-    if(op == '[')
-        return 2;
-    if(op == '(')
-        return 1;
-    return 0;    
-}
-
-//Olha se a precedencia dos operadores do topo
-//é maior ou igual a que eu quero inserir
-int precedencia_converte(char topo, char atual) {
-    int top = compare(topo), comp = compare(atual);
-    return top >= comp;
-}
-
-//Tabela de retornos:
+//Retornos:
 //1 == sucesso
 //0 == erro
-int converte_expressao(char *exp) {
+int converte_expressao(char *exp, char *posfix) {
     DinStack stack = dstack_start();
-    int i;
+    int i, aux = 0;
     //Percorro a expressão
     for(i = 0; i < strlen(exp); i++) {
         //Se for um operando, eu imprimo esse
-        if((exp[i] >= 'a' && exp[i] <= 'z') || (exp[i] >= 'A' && exp[i] <= 'Z')) 
-            printf("%c", exp[i]);
+        if(operando(exp[i])) {
+            posfix[aux] = exp[i];
+            aux++;
+        }
         //Se for um operador, eu coloco esse na pilha
         if(op(exp[i])) {
             //Olho no topo da pilha, inicializo com 0 para o caso em que a pilha
             //esta vazia e que a função precedencia_converte nao permita retirar o elemento
             //do topo da pilha
-            int topo = 0;
+            char topo = 0;
             dget_top(&stack, &topo);  
             //Enquanto a precedencia do topo for maior ou igual ao elemento atual
-            while(precedencia_converte((char) topo, exp[i])) {
+            while(precedencia_converte(topo, exp[i])) {
                 //Eu desempilho e imprimo os operadores 
                 //Se estiver vazia, eu paro
                 if(!dpop(&stack, &topo)) break;
-                printf("%c", topo);
+                posfix[aux] = topo;
+                aux++;
                 dget_top(&stack, &topo);  
             }
             //Após desempilhar e imprimir eu simplesmente empilho o operador
-            if(!dpush(&stack, (int) exp[i])) {
+            if(!dpush(&stack, exp[i])) {
                 printf("Erro no push!");
                 esvazia_pilha(&stack);
                 return 0;
             } 
         }
         //Se for um delimitador de abertura, eu coloco esse na pilha
-        if(del(exp[i])) {
+        if(delAber(exp[i])) {
             //Olho no topo da pilha pra ver se existe um delimitador
             //de abertura, inicializo com 123 para o caso em que a pilha
             //esta vazia e que a função precedencia_converte permita colocar o delimitador
-            //atual na pilha, já que 123 >= '{' (123 >= 123)
-            int topo = 123;
+            //atual na pilha, já que '{' >= '{' (123 >= 123)
+            char topo = '{';
             dget_top(&stack, &topo);  
-            if(precedencia_converte((char) topo, exp[i])) {
-                if(!dpush(&stack, (int) exp[i])) {
+            if(precedencia_converte(topo, exp[i])) {
+                if(!dpush(&stack, exp[i])) {
                     printf("Erro no push!");
                     esvazia_pilha(&stack);
                     return 0;
@@ -163,8 +193,8 @@ int converte_expressao(char *exp) {
         }
         //Se for um delimitador de fechamento, eu retiro tudo até chegar
         //no delimitador de abertura correspondente
-        if(exp[i] == '}' || exp[i] == ']' || exp[i] == ')') {
-            int del, atual;
+        if(delFecha(exp[i])) {
+            char del, atual;
             //Associo o delimitador de fechamento ao de 
             //abertura correspondente
             if(exp[i] == '}') atual = '{';
@@ -178,54 +208,139 @@ int converte_expressao(char *exp) {
                 if(del != atual && (del == '{' || del == '[' || del == '('))
                     return 0;
                 //Delimitador de abertura não é impresso
-                if(del != atual) printf("%c", del);
+                if(del != atual) {
+                    posfix[aux] = del;
+                    aux++;
+                }
             } while(del != atual);
         }
     }
     //Se a pilha não estiver vazia
     //eu desempilho e imprimo tudo
     if(!dempty_stack(stack)) {
-        int op;
+        char op;
         do {
             dpop(&stack, &op);
-            printf("%c", op);
+            posfix[aux] = op;
+            aux++;
         } while(!dempty_stack(stack));
     }
     return 1;
 }
 
+//Retornos: 
+//-1 == número de operadores não é adequado 
+//0 == número de operandos não é adequado
+//1 == avaliação da expressão foi correta
+int avalia_expressao(char *posfix, float *resultado) {
+    FloatStack stack = start_stk();
+    int i; 
+    //Percorro a expressao
+    for(i = 0; i < strlen(posfix); i++) {
+        //Se for um operando, leio ele e coloco na pilha
+        if(operando(posfix[i])) {
+            float valor;
+            printf("Digite o valor de %c: ", posfix[i]);
+            scanf("%f", &valor);
+            if(!stack_push(&stack, valor)){
+                printf("Erro no push!");
+                esvazia_pilha(&stack);
+                return 0;
+            }
+        }
+        //Se for um operador eu retiro os dois ultimos da pilha
+        //e efetuo a operação correspondente
+        if(op(posfix[i])) {
+            float op1, op2, res;
+            if(!stack_pop(&stack, &op2) || !stack_pop(&stack, &op1)) {
+                esvazia_pilha(&stack);
+                return 0;
+            }
+            res = opCorresp(op1, op2, posfix[i]);
+            //Depois de calcular o resultado, coloco esse na pilha
+            if(!stack_push(&stack, res)){
+                printf("Erro no push!");
+                esvazia_pilha(&stack);
+                return 0;
+            }
+        }
+    }
+    //Após percorrer, o resultado deve estar no
+    //topo da pilha
+    float res;
+    stack_pop(&stack, &res);
+    //Se após, a pilha estiver vazia,
+    //a expressão foi avaliada com sucesso
+    if(stack_empty(stack)){
+        //Passo o resultado
+        *resultado = res;
+        return 1;
+    }
+    //Se não estiver vazia, ocorreu um erro e
+    //deve esvaziar a pilha, retornando erro
+    free_stack(&stack);
+    return -1;
+}
 
 int main() {
-    char expressao[100];
-    int escolha, res;
+    int escolha = 0, valida = -2, avaliacao = -2;
+    float eval;
+    char expressao[100] = "", posfix[100] = "";
+    printf("Digite a expressao: ");
     scanf("%[^\n]", expressao);
-    printf("------EXPRESSOES------\n");
-    printf("(1)Validar escopo\n");
-    printf("(2)Converter expressao\n");
-    printf("(3)Avaliar expressao\n");
-    printf("Digite sua escolha: ");
-    scanf("%d", &escolha);
-    switch(escolha) {
-        case 1:
-            res = valida_escopo(expressao);
-            if(res == 1) 
-                printf("A expressao e valida");
-            else if(res == 0)
-                printf("Ordem dos fechamentos divergem da ordem das aberturas da expressao");
-            else
-                printf("A precedencia nao e obedecida na expressao");
-            break;
-        case 2: 
-            if(converte_expressao(expressao)) 
-                printf("\nConvertido com sucesso!");
-            else
-                printf("\nNao foi possivel converter");
-            break;
-        /* case 3: 
-            avalia_expressao(); 
-            break; */
-        default: 
-            printf("Saindo do programa...");
-    }
+
+    do {
+        if(escolha) printf("\n");
+        printf("\nEXPRESSAO: %s\n", expressao);
+        printf("(1)Validar escopo\n");
+        printf("(2)Converter expressao\n");
+        printf("(3)Avaliar expressao\n");
+        printf("Digite sua escolha: ");
+        scanf("%d", &escolha);
+        switch(escolha) {
+            case 1:
+                if(valida == -2)
+                    valida = valida_escopo(expressao);            
+                if(valida == 1) 
+                    printf("\nO escopo da expressao e valida");
+                else if(valida == 0)
+                    printf("\nOrdem dos fechamentos divergem da ordem das aberturas da expressao");
+                else
+                    printf("\nA precedencia nao e obedecida na expressao");
+                break;
+            case 2:
+                if(valida == -2) 
+                    printf("\nVerifique se a expressao e valida primeiro!");
+                else if(valida != 1)
+                    printf("\nExpressao invalida, impossivel converter!");
+                else if(strcmp(posfix, "")) 
+                    printf("\nExpressao ja esta convertida: %s", posfix);
+                else if(converte_expressao(expressao, posfix)) 
+                    printf("\nConvertido com sucesso! -> %s", posfix);
+                else
+                    printf("\nNao foi possivel converter");
+                break;
+            case 3: 
+                if(!strcmp(posfix, "")) 
+                    printf("\nConverta a expressao primeiro!", posfix);
+                else{
+                    printf("\nEXPRESSAO: %s\n", expressao);
+                    avaliacao = avalia_expressao(posfix, &eval);
+                }
+                if(avaliacao == 1) 
+                    printf("\nO resultado dessa expressao e: %.2f", eval);
+                else if(avaliacao == 0)
+                    printf("\nNumero de operandos nao e adequado");
+                else if(avaliacao == -1)
+                    printf("\nNumero de operadores nao e adequado");
+
+                break;
+            default: 
+                printf("\nSaindo do programa...");
+        }
+        printf("\n\n");
+        system("pause");
+        system("cls");
+    } while(escolha > 0 && escolha < 4);
     return 0;
 }
