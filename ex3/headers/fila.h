@@ -6,4 +6,4 @@ int fila_vazia(Fila fila);
 int fila_cheia(Fila fila);
 int insere_fim(Fila fila, char *placa);
 int remove_ini(Fila fila, char *placa);
-int tamanho(Fila fila);
+size_t tamanho(Fila fila);

@@ -3,23 +3,25 @@
 #include <string.h>
 #include <ctype.h>
 #include ".\headers\fila.h"
+#define qnt_boxes 5
 
 int read_int();
 
-void imprimir(Fila fila);
-
+void inserir(Fila *boxes, Fila fila_espera);
+void remover(Fila *boxes, Fila fila_espera);
+void imprimir(Fila *boxes, Fila fila_espera);
 void clean_buffer();
 
 int main(){
-    char placa[9];
 
     int sair = 0, fila_criada = 0;
-    Fila fila;
+    Fila boxes[qnt_boxes];
+    Fila fila_espera;
 
     while (sair != 1) {
         int op = 0;
 
-        printf("\n\n[1] Criar fila");
+        printf("\n\n[1] Inicializar estacionamento");
         printf("\n[2] Entrada de veiculo");
         printf("\n[3] Saida de veiculo");
         printf("\n[4] Visualizacao do cenario");
@@ -30,43 +32,44 @@ int main(){
         switch (op) {
             case 1:
                 if (fila_criada)
-                    printf("Fila ja esta criada!");
+                    printf("Estacionamento ja esta inicializado!");
                 else {
-                    fila = cria_fila();
+                    for (size_t i = 0; i < qnt_boxes; i++) {
+                        boxes[i] = cria_fila();
+                        if (boxes[i] == NULL) {
+                            printf("Erro ao inicilizar!!");
+                            return -1;
+                        }
+                    }
+                    
+                    fila_espera = cria_fila();
+                    if (fila_espera == NULL) {
+                        printf("Erro ao inicilizar!!");
+                        return -1;
+                    }
+
                     fila_criada = 1;
-                    printf("Fila criada!");
+                    printf("Estacionamento inicializado!");
                 }
                 break;
             case 2:
-                if (!fila_criada) {
-                    printf("Nenhuma fila foi instanciada!");
-                } else {
-                    printf("Qual a placa do veiculo que deseja dar entrada: ");
-                    scanf(" %8[^\n]", placa);
-                    clean_buffer();
-
-                    if(!insere_fim(fila, placa))
-                        printf("Nao foi possivel inserir o veiculo!");
-                    else
-                        printf("Veiculo inserido!");
-                }
+                if (!fila_criada)
+                    printf("Nao ha estacionamento inicializado!");
+                else
+                    inserir(boxes, fila_espera);
                 break;
             case 3:
                 if (!fila_criada) {
-                    printf("Nenhuma fila foi instanciada!");
+                    printf("Nao ha estacionamento inicializado!");
                     break;
-                } else {
-                    printf("Insira a placa do carro que deve ser removido: ");
-                    char remover[9];
-                    scanf(" %8[^\n]", remover);
-                    // Implementar remoção de um veículo em específico
-                }
+                } else
+                    remover(boxes, fila_espera);
                 break;
             case 4:
                 if (!fila_criada)
-                    printf("Nenhuma fila foi instanciada!");
+                    printf("Nao ha estacionamento inicializado!");
                 else
-                    imprimir(fila);
+                    imprimir(boxes, fila_espera);
                 break;
             case 5:
                 sair = 1;
@@ -75,6 +78,10 @@ int main(){
                 printf("Opcao invalida!");
                 break;
         }
+        // printf("\n");
+        // system("pause");
+        // system("cls");
+
     };
 
     return 0;
@@ -82,37 +89,98 @@ int main(){
 
 // ==== Funções do programa aplicativo ==== //
 
-//Imprimir
-void imprimir(Fila fila){
+//Inserir
+void inserir(Fila *boxes, Fila fila_espera){
+    char placa[9];
+    printf("Qual a placa do veiculo que deseja dar entrada: ");
+        scanf(" %8[^\n]", placa);
+        clean_buffer();
 
-    if (fila_vazia(fila)) {
-        printf("A fila esta vazia!!");
-    } else {
-        int qnt = tamanho(fila);
-
-        printf("Carros no estacionamento: %d \n", qnt);
-
-        char **veiculos, placa[9];
-        veiculos = (char**) malloc(qnt * sizeof(char*));
-
-        for (int i = 0; i < qnt; i++)
-            veiculos[i] = (char*) malloc(sizeof(char[9]));
-
-        printf("    BOX 1       BOX 2       BOX 3       BOX 4       BOX 5   ");
-
-        size_t i = 0;
-        while (remove_ini(fila, placa)) {
-            if (i > 50) {
-                printf("Fila de espera: ");
-            } else if (i % 5 == 0)
-                printf("\n");
-            printf("| %-8s |", placa);
-            strcpy(veiculos[i], placa);
-            i++;
+        size_t box = 0, menor = tamanho(boxes[0]);
+        for (size_t i = 1; i < qnt_boxes; i++) {
+            if (tamanho(boxes[i]) < menor) {
+                menor = tamanho(boxes[i]);
+                box = i;
+            }
         }
 
-        for (size_t j = 0; j < qnt; j++)
-            insere_fim(fila, veiculos[j]);
+        if (menor == max) {
+            if (!insere_fim(fila_espera, placa))
+                printf("Estacionamento cheio!");
+            else
+                printf("Boxes cheios! Veiculo esta na lista de espera!");
+        } else {
+            insere_fim(boxes[box], placa);
+            printf("Veiculo inserido no box %d", box+1);
+        }
+}
+
+//Remover
+void remover(Fila *boxes, Fila fila_espera){
+    char placa[9], remover[9];
+    printf("Insira a placa do veiculo que deseja remover: ");
+    scanf(" %8[^\n]", remover);
+    clean_buffer();
+    
+    strcpy(placa, "\0");
+    // Percorrer a lista de espera em busca do veiculo
+    if (tamanho(fila_espera) > 0) {
+        for (size_t i = 0; i < tamanho(fila_espera); i++) {
+            remove_ini(fila_espera, placa);
+            if (strcmp(remover, placa) == 0) {
+                printf("Veiculo de placa %s foi removido do estacionamento. Estava na fila de espera.", placa);
+                return;
+            }
+            insere_fim(fila_espera, placa);
+        }
+    }
+
+    for (size_t i = 0; i < qnt_boxes; i++) {
+        for (size_t j = 0; j < tamanho(boxes[i]); j++) {
+            remove_ini(boxes[i], placa);
+            if (strcmp(remover, placa) == 0) {
+                printf("Veiculo de placa %s foi removido do estacionamento. Estava no box %d.", placa, i+1);
+                if (tamanho(fila_espera) > 0) {
+                    remove_ini(fila_espera, placa);
+                    insere_fim(boxes[i], placa);
+                    printf("\nVeiculo %s foi removido da fila de espera e colocado no box %d.", placa, i+1);
+                }
+                return;
+            }
+            insere_fim(boxes[i], placa);
+        }
+    }
+
+    printf("Veiculo de placa %s nao esta no estacionamento!", remover);
+}
+
+//Imprimir
+void imprimir(Fila *boxes, Fila fila_espera){
+    char placa[9];
+
+    for (size_t i = 0; i < qnt_boxes; i++) {
+        if (fila_vazia(boxes[i]))
+            printf("\nBOX %d esta vazio!", i+1);
+        else {
+            printf("\n   BOX 0%d   ", i+1);
+            for (size_t j = 0; j < tamanho(boxes[i]); j++) {
+                remove_ini(boxes[i], placa);
+                printf("\n| %-8s |", placa);
+                insere_fim(boxes[i], placa);
+            }
+            
+        }
+    }
+
+    if (fila_vazia(fila_espera))
+            printf("\nNao ha carros na fila de espera!");
+    else {
+        printf("\nFila de espera:");
+        for (size_t j = 0; j < tamanho(fila_espera); j++) {
+            remove_ini(fila_espera, placa);
+            printf("\n| %-8s |", placa);
+            insere_fim(fila_espera, placa);
+        }
     }
 }
 

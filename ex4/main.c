@@ -108,13 +108,12 @@ int main(){
                 break;
         }
     };
-
     return 0;
 }
 
 //Funcoes do programa app
 int read_int(){
-    char input[11];
+    char input[11]; 
     int inp_error = 1;
     while(inp_error) {
         fgets(input, sizeof(input), stdin);
