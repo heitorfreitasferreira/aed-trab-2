@@ -78,9 +78,12 @@ int main(){
                 printf("Opcao invalida!");
                 break;
         }
-        // printf("\n");
-        // system("pause");
-        // system("cls");
+
+        if (!sair) {
+            printf("\n");
+            system("pause");
+            system("cls");
+        }
 
     };
 
