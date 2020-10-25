@@ -1,36 +1,52 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <time.h>
 #include <ctype.h>
+#include <string.h>
 #include ".\headers\fila.h"
 
-//Lê somente valor inteiro
+typedef struct {
+    size_t tempo_atendimento; // Tempo que o cliente ficará no caixa
+    size_t tempo_espera; // Tempo que o cliente está esperando na fila
+    horario horario_entrada; // Horário em que o cliente entrou na fila
+} Cliente;
+
+typedef struct {
+    Cliente cliente;
+    size_t status; // 1 = aberto; 0 = fechado;
+    size_t ocupado; // 1 = com cliente; 0 = sem cliente;
+    size_t tempo_atendimento; // Tempo em que o caixa esta atendendo o cliente que está nele
+} Caixa;
+
+// Lê somente numeros inteiros e retorna o valor lido
 int read_int();
 
-//Imprimir
-void imprimir(Fila fila);
+// Imprime a situação atual da fila e dos caixas
+void visualizar_cenario(Fila *fila, Caixa *caixas, Cliente cliente);
+// Avança 1 unidade de tempo no cenário
+void avancar_tempo(Fila *fila, Caixa *caixas, Cliente cliente);
+// Otimiza a abertua e o fechamento dos caixas
+void otimizar_caixas(Fila *fila, Caixa *caixas, Cliente cliente);
 
 //Função para limpar buffer (fflush causa UB)
 void clean_buffer();
 
 int main(){
-    char nome[20];
-    int vol;
-    float preco;
 
     int sair = 0;
     Fila fila = NULL;
+    Caixa caixas[8];
+    Cliente cliente;
+    size_t espera = 0;
 
     while (sair != 1) {
         int op = 0;
 
-        printf("\n\n[1] Criar fila");
-        printf("\n[2] Imprimir fila");
-        printf("\n[3] Inserir no final");
-        printf("\n[4] Remover no inicio");
-        printf("\n[5] Esvaziar fila");
-        printf("\n[6] Apagar fila");
-        printf("\n[7] Sair\n");
+        printf("\n\n[1] Inicializar filas e caixas");
+        printf("\n[2] Visualizar cenario");
+        printf("\n[3] Dar entrada em clientes");
+        printf("\n[4] Avancar tempo");
+        printf("\n[5] Sair\n");
         scanf("%d", &op);
         clean_buffer();
 
@@ -40,6 +56,17 @@ int main(){
                     printf("Fila ja esta criada!");
                 else {
                     fila = cria_fila();
+                    if (fila == NULL) {
+                        printf("ERRO CRITICO. Finalizando programa.");
+                        return -1;
+                    }
+                    
+                    for (size_t i = 0; i < 8; i++) {
+                        caixas[i].tempo_atendimento = 0;
+                        caixas[i].ocupado           = 0;
+                        caixas[i].status            = 0;
+                    }
+                    
                     printf("Fila criada!");
                 }
                 break;
@@ -47,66 +74,57 @@ int main(){
                 if (fila == NULL)
                     printf("Nenhuma fila foi instanciada!");
                 else
-                    imprimir(fila);
+                    visualizar_cenario(&fila, caixas, cliente);
                 break;
             case 3:
-                if (fila == NULL) {
+                if (fila == NULL)
                     printf("Nenhuma fila foi instanciada!");
-                } else {
-                    printf("Qual o nome da bebida que deseja inserir: ");
-                    scanf(" %19[^\n]", nome);
-                    clean_buffer();
-
-                    printf("Qual o volume de %s: ", nome);
-                    vol = read_int();
+                else {
+                    printf("Quantos cliente serao inseridos na fila: ");
+                    int qnt = read_int();
                     
-                    printf("Qual o preco de %s: ", nome);
-                    scanf("%f", &preco);
+                    int teste = 0;
+                    for (size_t i = 0; i < qnt; i++) {
+                        cliente.tempo_atendimento = (size_t) (rand() % (10 - 2 + 1)) + 2;
+                        cliente.tempo_espera = 0;
 
-                    if(insere_fim(fila, nome, vol, preco) == 0)
-                        printf("Nao foi possivel inserir o elemento!");
-                    else
-                        printf("Elemento inserido!");
+                        time_t hora;
+                        time(&hora);
+                        cliente.horario_entrada = localtime(&hora);
+
+                        if (!insere_fim(fila, cliente.tempo_atendimento,
+                            cliente.tempo_espera, cliente.horario_entrada)) {
+                            printf("Nao foi possivel inserir todos os clientes!");
+                            teste = 1;
+                            break;
+                        }
+
+                    }
+
+                    if (!teste)
+                        printf("Todos os %d clientes foram inseridos na fila!", qnt);
                 }
                 break;
             case 4:
-                if (fila == NULL) {
+                if (fila == NULL)
                     printf("Nenhuma fila foi instanciada!");
-                    break;
-                } else {
-                    if (!remove_ini(fila, nome, &vol, &preco))
-                        printf("Falha ao remover elemento. Ele pode nao estar na fila!!");
-                    else
-                        printf("Elemento removido! %s foi removido.", nome);
-                }
+                else
+                    avancar_tempo(&fila, caixas, cliente);
                 break;
             case 5:
-                if (fila == NULL) {
-                    printf("Nenhuma fila foi instanciada!");
-                    break;
-                } else {
-                if(esvazia_fila(fila))
-                    printf("A fila agora esta vazia!");
-                else
-                    printf("A fila ja esta vazia!");
-                }
-                break;
-            case 6:
-                if (fila == NULL) {
-                    printf("Nenhuma fila foi instanciada!");
-                    break;
-                } else {
-                    apaga_fila(&fila);
-                    printf("A fila foi apagada!");
-                }
-                break;
-            case 7:
                 sair = 1;
                 break;
             default:
                 printf("Opcao invalida!");
                 break;
         }
+
+        if (!sair) {
+            printf("\n");
+            system("pause");
+            system("cls");
+        }
+
     };
     return 0;
 }
@@ -146,31 +164,138 @@ int read_int(){
     return strtol(input, NULL, 10);
 }
 
-void imprimir(Fila fila){
-    if (fila_vazia(fila) == 1) {
+
+// Após uma pesquisa, descobriu-se que o cliente  fica satisfeito  quando o tempo de  espera na fila  não ultrapassa 30 unidades de tempo e a fila não têm mais que 15 pessoas. Portanto, um novocaixa é aberto quando a fila tem 80% dessa capacidade de pessoas e o tempo médio de espera dos últimos 5 clientes é de 90% do limite especificado. Por outro lado, um caixa é fechado quando ambas as métricas está abaixode 60%.
+void otimizar_caixas(Fila *fila, Caixa *caixas, Cliente cliente){
+    if (fila_vazia(*fila))
+        return;
+
+    size_t qnt = tamanho_fila(*fila);
+    int soma_espera = 0;
+
+    for (size_t i = 0; i < qnt; i++) { // Percorre os clientes na fila
+        if (!remove_ini(*fila, &cliente.tempo_atendimento, &cliente.tempo_espera, cliente.horario_entrada))
+            break;
+        
+        // Soma o tempo de espera dos ultimos 5 clientes da fila
+        if (qnt > 5 && i >= qnt-5) 
+            soma_espera += cliente.tempo_espera;
+
+        insere_fim(*fila, cliente.tempo_atendimento, cliente.tempo_espera, cliente.horario_entrada);
+    }
+    
+    if (soma_espera <= 0)
+        return;
+
+    // Media do tempo de espera dos ultimos 5 clientes da fila
+    float media_espera = (float) soma_espera / 5.0;
+    
+    //Verifica se é necessário a abertura de caixas pelo critério da questão
+    if (media_espera >= (30 * 0.9) && qnt >= (15 * 0.8)) {
+        for (size_t i = 0; i < 8; i++) {
+            if (caixas[i].status == 0) {
+                caixas[i].status = 1;
+                caixas[i].ocupado = 0;
+                break;
+            }
+        }
+    }
+    
+    // 60% de 30 = 18
+    //Verifica se é necessário fechar caixas pelo critério da questão
+    if (media_espera <= 18 && qnt <= (15 * 0.6)) {
+        for (size_t i = 0; i < 8; i++) {
+            if (caixas[i].status == 1 && !caixas[i].ocupado) {
+                caixas[i].status = 0; 
+                break;
+            }
+        }
+    }
+}
+
+void avancar_tempo(Fila *fila, Caixa *caixas, Cliente cliente){
+
+    for (size_t i = 0; i < 8; i++) {
+        if (caixas[i].status && caixas[i].ocupado) // Verifica se o caixa tem esta aberto e com cliente
+            caixas[i].tempo_atendimento++; // Aumenta o tempo do atendimento atual do caixa
+    }
+
+    size_t qnt = tamanho_fila(*fila);
+    for (size_t i = 0; i < qnt; i++) { // Percorre a fila aumentando o tempo de espera de cada cliente na fila
+        if (!remove_ini(*fila, &cliente.tempo_atendimento, &cliente.tempo_espera, cliente.horario_entrada))
+            break;
+        cliente.tempo_espera++;
+        insere_fim(*fila, cliente.tempo_atendimento, cliente.tempo_espera, cliente.horario_entrada);
+    }
+
+
+    for (size_t i = 0; i < 8; i++) {
+        if (caixas[i].status && !caixas[i].ocupado) { // Verifica se tem caixa aberto apos a otimização
+            // Se há caixa aberto, inserir o primeiro cliente na fila nele
+            if(!remove_ini(*fila, &cliente.tempo_atendimento, &cliente.tempo_espera, cliente.horario_entrada))
+                break;
+            
+            cliente.tempo_espera = 0;
+            
+            caixas[i].cliente = cliente;
+            
+            caixas[i].ocupado = 1;
+            
+            caixas[i].tempo_atendimento = 0;
+        }
+        // Verificar se há caixa aberto que ja bateu o tempo de atendimento com o cliente
+        if (caixas[i].status && caixas[i].ocupado && 
+        (caixas[i].tempo_atendimento == caixas[i].cliente.tempo_atendimento)){
+            Cliente temp;
+            caixas[i].cliente = temp; // Esvaziando cliente;
+            caixas[i].ocupado = 0;
+        }
+    }
+    printf("\nTempos de espera e de atendendimento em caixa avancaram em 1 unidade!");
+
+    // Otimiza os caixas após o tempo avançar
+    otimizar_caixas(fila, caixas, cliente);
+}
+
+void visualizar_cenario(Fila *fila, Caixa *caixas, Cliente cliente){
+    if (fila_vazia(*fila)) {
         printf("A fila esta vazia!!");
     } else {
-        char nome[20];
-        int vol;
-        float preco;
-
-        Fila temp = cria_fila();
-        if (temp == NULL)
-            printf("Erro ao imprimir!");
-
-        printf("Fila: \n");
-        size_t i = 0;
-        while (remove_ini(fila, nome, &vol, &preco)) {
-            printf("\n--------------");
-            printf("\nNome: %s", nome);
-            printf("\nVolume: %d", vol);
-            printf("\nPreco: %.2f", preco);
-
-            insere_fim(temp, nome, vol, preco);
+            printf("=== CAIXAS ===");
+        for (size_t i = 0; i < 8; i++) {
+            printf("\nCaixa %d:", i+1);
+            if (caixas[i].status && caixas[i].ocupado) {
+                printf("\n - Status: aberto");
+                printf("\n - Tempo atentendo cliente atual: %d u.t.", caixas[i].tempo_atendimento);
+                printf("\n - Tempo de atendimento do cliente: %d u.t.", caixas[i].cliente.tempo_atendimento);
+            } else
+                printf("\n - Status: fechado");
         }
-        while (remove_ini(temp, nome, &vol, &preco)) {
-            insere_fim(fila, nome, vol, preco);
+        
+        printf("\n\n === FILA DE CLIENTES ===");
+
+        size_t i = 0, soma_antendimento;
+        size_t qnt = tamanho_fila(*fila);
+        for (size_t i = 0; i < qnt; i++) {
+            if (!remove_ini(*fila, &cliente.tempo_atendimento, &cliente.tempo_espera, cliente.horario_entrada))
+                break;
+
+            printf("\n\n - Cliente %d", i+1);
+            printf("\nTempo de espera na fila: %d u.t.", cliente.tempo_espera);
+            printf("\nHorario de entrada: %dh%dmin%ds",
+                cliente.horario_entrada->tm_hour,
+                cliente.horario_entrada->tm_min,
+                cliente.horario_entrada->tm_sec
+            );
+            
+            if (qnt > 5 && i < 5) 
+                soma_antendimento += cliente.tempo_atendimento;
+
+            insere_fim(*fila, cliente.tempo_atendimento, cliente.tempo_espera, cliente.horario_entrada);
         }
+
+        if (qnt >= 5)
+            printf("\n\nMedia de tempo de atendimento dos 5 primeiros clientes: %.2f", soma_antendimento / 5.0);
     }
 }
 
