@@ -274,7 +274,7 @@ void visualizar_cenario(Fila *fila, Caixa *caixas, Cliente cliente){
         
         printf("\n\n === FILA DE CLIENTES ===");
 
-        size_t i = 0, soma_antendimento;
+        size_t i = 0, soma_antendimento = 0;
         size_t qnt = tamanho_fila(*fila);
         for (size_t i = 0; i < qnt; i++) {
             if (!remove_ini(*fila, &cliente.tempo_atendimento, &cliente.tempo_espera, cliente.horario_entrada))

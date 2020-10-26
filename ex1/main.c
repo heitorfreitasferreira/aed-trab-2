@@ -4,33 +4,6 @@
 #include <math.h>
 #include "lista.h"
 
-void imprimir(Pilha pil){
-  Pilha copia = cria();
-  int elem = 0;
-
-  if(vazia(pil))
-  {
-    printf("Pilha vazia!\n");
-    
-    return;
-  }
-
-  while (!vazia(pil))
-  {
-    pop(pil, &elem);
-    printf("%d ", elem);
-    push(copia, elem);
-  };
-  
-  while (!vazia(copia))
-  {
-    pop(copia, &elem);
-    push(pil, elem);
-  };
-  printf("\n");
-  free(copia);
-}
-
 int converter_para(Pilha pil, int elem, char *result, int base){
   int cont = 0, aux = 0, check;
 
