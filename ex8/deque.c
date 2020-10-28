@@ -74,8 +74,7 @@ int shift(Deque queue, float *elem)
   *elem = aux->info;
   if (queue->beg == queue->end)
   {
-    queue->end = NULL; //redundante
-    queue->beg = NULL;
+    queue->end = NULL;
   }
   queue->beg = aux->prox;
   free(aux);
@@ -89,10 +88,9 @@ int pop(Deque queue, float *elem)
   *elem = aux->info;
   if (queue->beg == queue->end)
   {
-    queue->end = NULL;
-    queue->beg = NULL; //redundante
+    queue->beg = NULL;
   }
-  queue->end = NULL;
+  queue->end = aux->ant;
   free(aux);
   return 1;
 }

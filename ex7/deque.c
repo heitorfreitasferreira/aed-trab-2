@@ -36,6 +36,7 @@ int push(Deque queue, int elem)
   queue->count++;
   return 1;
 }
+
 int unshift(Deque queue, int elem)
 {
   if (queue == NULL || queue->count == max)
