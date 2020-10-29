@@ -88,7 +88,7 @@ int main(int argc, char const *argv[])
       printf(": ");
       scanf("%d", &tmp);
       tmp--;
-      if (unshift(lst[tmp], elemento))
+      if (shift(lst[tmp], &elemento))
         printf("%d foi removido\n", elemento);
       else
         printf("Erro ao remover na posicao %d\n", tmp2);
@@ -187,6 +187,7 @@ int main(int argc, char const *argv[])
       libera_deque(&lst[tmp]);
       lst_ocupados[tmp]--;
       qnt_lista--;
+      lst_ocupados[i] = 0;
       printf("\n");
       sleep(1);
       system("clear"); //MUDAR PRA CLS PRA SISTEMAS INFERIORES
