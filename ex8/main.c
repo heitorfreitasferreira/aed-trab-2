@@ -88,7 +88,7 @@ int main(int argc, char const *argv[])
       printf(": ");
       scanf("%d", &tmp);
       tmp--;
-      if (unshift(lst[tmp], elemento))
+      if (shift(lst[tmp], &elemento))
         printf("%f foi removido\n", elemento);
       else
         printf("Erro ao remover na posicao %d\n", tmp2);
